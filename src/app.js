@@ -1,6 +1,8 @@
 const express = require("express");
 const cors = require("cors");
-const { uuid, isUuid } = require("uuidv4");
+const { uuid } = require("uuidv4");
+
+const { validateUuid } = require("./validators");
 
 const app = express();
 
@@ -8,16 +10,6 @@ app.use(express.json());
 app.use(cors());
 
 const repositories = [];
-
-const validateUuid = (req, res, next) => {
-  const { id } = req.params;
-
-  if (!isUuid(id)) return res.status(400).json({ error: "Invalid uuid" });
-
-  res.locals.validated = { id };
-
-  return next();
-};
 
 const findRepo = async (req, res, next) => {
   const { id } = res.locals.validated;
@@ -46,7 +38,9 @@ app.post("/repositories", (req, res) => {
   return res.status(200).json(repo);
 });
 
-app.put("/repositories/:id", validateUuid, findRepo, (req, res) => {
+app.use("/repositories/:id", validateUuid, findRepo);
+
+app.put("/repositories/:id", (req, res) => {
   const { id, index } = res.locals.validated;
   const { title, techs, url } = req.body;
 
@@ -57,14 +51,14 @@ app.put("/repositories/:id", validateUuid, findRepo, (req, res) => {
   return res.status(200).json(newRepo);
 });
 
-app.delete("/repositories/:id", validateUuid, findRepo, (req, res) => {
+app.delete("/repositories/:id", (req, res) => {
   const { index } = res.locals.validated;
   repositories.splice(index, 1);
 
   return res.sendStatus(204);
 });
 
-app.post("/repositories/:id/like", validateUuid, findRepo, (req, res) => {
+app.post("/repositories/:id/like", (req, res) => {
   const { index } = res.locals.validated;
   repositories[index].likes += 1;
 
